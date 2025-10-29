@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToT Attendance System</title>
+    <meta name="google-signin-client_id" content="632342405819-d9qse2hi5q7m3qf6ag22at5qhsh87i7p.apps.googleusercontent.com">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header .event-info {
+            font-size: 14px;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #212529;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        #signInDiv {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(235, 51, 73, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        #cameraPreview {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 12px;
+            margin: 15px 0;
+            display: none;
+            object-fit: cover;
+        }
+
+        #selfiePreview {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 12px;
+            margin: 15px 0;
+            display: none;
+            object-fit: cover;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 20px 15px;
+            }
+            
+            .btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 ToT Attendance System</h1>
+            <div class="event-info">
+                <strong>Training Program</strong><br>
+                📅 3rd Oct - 5th Oct 2025<br>
+                📍 Sanvand Hall, CP Office, CBD Belapur
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="alertBox" class="alert"></div>
+
+            <!-- Sign In Section -->
+            <div id="signInSection" class="card">
+                <div class="card-title">🔐 Authentication Required</div>
+                <p style="font-size: 14px; color: #6c757d; margin-bottom: 15px;">
+                    Please sign in with your Google account to mark attendance.
+                </p>
+                <div id="signInDiv"></div>
+            </div>
+
+            <!-- User Info Section -->
+            <div id="userInfoSection" class="card hidden">
+                <div class="card-title">
+                    👤 User Information
+                    <span class="status-badge status-success">Authenticated</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value" id="userName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value" id="userEmail">-</span>
+                </div>
+            </div>
+
+            <!-- GPS Section -->
+            <div id="gpsSection" class="card hidden">
+                <div class="card-title">
+                    📍 Location Status
+                    <span id="locationBadge" class="status-badge status-warning">Checking...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Latitude:</span>
+                    <span class="info-value" id="latitude">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Longitude:</span>
+                    <span class="info-value" id="longitude">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Accuracy:</span>
+                    <span class="info-value" id="accuracy">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Distance:</span>
+                    <span class="info-value" id="distance">-</span>
+                </div>
+                <button class="btn btn-secondary" id="refreshGPSBtn" onclick="fetchLocation()">
+                    🔄 Refresh Location
+                </button>
+            </div>
+
+            <!-- Camera Section -->
+            <div id="cameraSection" class="card hidden">
+                <div class="card-title">📷 Selfie Verification</div>
+                <video id="cameraPreview" autoplay playsinline></video>
+                <img id="selfiePreview" alt="Selfie Preview">
+                <button class="btn btn-primary" id="captureBtn" onclick="captureSelfie()">
+                    📸 Capture Selfie
+                </button>
+                <button class="btn btn-secondary hidden" id="retakeBtn" onclick="retakeSelfie()">
+                    🔄 Retake Photo
+                </button>
+            </div>
+
+            <!-- Attendance Buttons -->
+            <div id="attendanceSection" class="card hidden">
+                <div class="card-title">✅ Mark Attendance</div>
+                <button class="btn btn-success" id="markInBtn" onclick="markAttendance('IN')" disabled>
+                    ⏰ Mark IN
+                </button>
+                <button class="btn btn-danger" id="markOutBtn" onclick="markAttendance('OUT')" disabled>
+                    🚪 Mark OUT
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            © 2025 ToT Attendance System | Powered by Google Apps Script
+        </div>
+    </div>
+
+    <script>
+        // Backend URL - Your Apps Script deployment
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxCzEQHdtkrL_MZjh0-aCClI4OqwWGnoTsDUojr5W0nnOiJgsNjsQnd1oszJkwPtC1D1Q/exec';
+        
+        // Configuration
+        const CONFIG = {
+            VENUE_LAT: 19.025515,
+            VENUE_LNG: 73.042047,
+            MAX_DISTANCE: 0.2 // 200 meters = 0.2 km
+        };
+
+        // Global variables
+        let userProfile = null;
+        let currentLocation = null;
+        let selfieBase64 = null;
+        let videoStream = null;
+
+        // Initialize Google Sign-In
+        function initGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: '632342405819-d9qse2hi5q7m3qf6ag22at5qhsh87i7p.apps.googleusercontent.com',
+                callback: handleCredentialResponse
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById('signInDiv'),
+                { 
+                    theme: 'filled_blue', 
+                    size: 'large',
+                    width: 250,
+                    text: 'signin_with'
+                }
+            );
+        }
+
+        // Handle Google Sign-In response
+        function handleCredentialResponse(response) {
+            const credential = response.credential;
+            const payload = parseJwt(credential);
+            
+            userProfile = {
+                name: payload.name,
+                email: payload.email,
+                picture: payload.picture
+            };
+
+            document.getElementById('userName').textContent = userProfile.name;
+            document.getElementById('userEmail').textContent = userProfile.email;
+
+            document.getElementById('signInSection').classList.add('hidden');
+            document.getElementById('userInfoSection').classList.remove('hidden');
+            document.getElementById('gpsSection').classList.remove('hidden');
+            document.getElementById('cameraSection').classList.remove('hidden');
+            document.getElementById('attendanceSection').classList.remove('hidden');
+
+            showAlert('Successfully signed in as ' + userProfile.name, 'success');
+            fetchLocation();
+            startCamera();
+        }
+
+        // Parse JWT token
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Fetch GPS Location
+        function fetchLocation() {
+            showAlert('Fetching your location...', 'info');
+            document.getElementById('locationBadge').textContent = 'Fetching...';
+            document.getElementById('locationBadge').className = 'status-badge status-warning';
+
+            if (!navigator.geolocation) {
+                showAlert('Geolocation is not supported by your browser', 'error');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    currentLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+
+                    document.getElementById('latitude').textContent = currentLocation.latitude.toFixed(6);
+                    document.getElementById('longitude').textContent = currentLocation.longitude.toFixed(6);
+                    document.getElementById('accuracy').textContent = currentLocation.accuracy.toFixed(2) + ' m';
+
+                    const distance = calculateDistance(
+                        currentLocation.latitude,
+                        currentLocation.longitude,
+                        CONFIG.VENUE_LAT,
+                        CONFIG.VENUE_LNG
+                    );
+
+                    document.getElementById('distance').textContent = distance.toFixed(3) + ' km';
+
+                    if (distance <= CONFIG.MAX_DISTANCE) {
+                        document.getElementById('locationBadge').textContent = 'In Range ✓';
+                        document.getElementById('locationBadge').className = 'status-badge status-success';
+                        showAlert('You are within the venue range!', 'success');
+                        enableAttendanceButtons();
+                    } else {
+                        document.getElementById('locationBadge').textContent = 'Out of Range';
+                        document.getElementById('locationBadge').className = 'status-badge status-error';
+                        showAlert('You are too far from the venue (' + distance.toFixed(3) + ' km away). Please move closer.', 'error');
+                        disableAttendanceButtons();
+                    }
+                },
+                error => {
+                    showAlert('Unable to retrieve your location. Error: ' + error.message, 'error');
+                    document.getElementById('locationBadge').textContent = 'Failed';
+                    document.getElementById('locationBadge').className = 'status-badge status-error';
+                    disableAttendanceButtons();
+                }
+            );
+        }
+
+        // Calculate distance using Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                     Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function toRad(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+
+        // Start Camera
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' },
+                    audio: false 
+                });
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = videoStream;
+                video.style.display = 'block';
+                document.getElementById('captureBtn').disabled = false;
+            } catch (error) {
+                showAlert('Unable to access camera. Error: ' + error.message, 'error');
+                document.getElementById('captureBtn').disabled = true;
+            }
+        }
+
+        // Capture Selfie
+        function captureSelfie() {
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            selfieBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            
+            document.getElementById('selfiePreview').src = selfieBase64;
+            document.getElementById('selfiePreview').style.display = 'block';
+            document.getElementById('cameraPreview').style.display = 'none';
+            document.getElementById('captureBtn').classList.add('hidden');
+            document.getElementById('retakeBtn').classList.remove('hidden');
+            
+            showAlert('Selfie captured successfully!', 'success');
+            enableAttendanceButtons();
+        }
+
+        // Retake Selfie
+        function retakeSelfie() {
+            selfieBase64 = null;
+            document.getElementById('selfiePreview').style.display = 'none';
+            document.getElementById('cameraPreview').style.display = 'block';
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            disableAttendanceButtons();
+        }
+
+        // Enable Attendance Buttons
+        function enableAttendanceButtons() {
+            if (userProfile && currentLocation && selfieBase64) {
+                const distance = calculateDistance(
+                    currentLocation.latitude,
+                    currentLocation.longitude,
+                    CONFIG.VENUE_LAT,
+                    CONFIG.VENUE_LNG
+                );
+                
+                if (distance <= CONFIG.MAX_DISTANCE) {
+                    document.getElementById('markInBtn').disabled = false;
+                    document.getElementById('markOutBtn').disabled = false;
+                }
+            }
+        }
+
+        // Disable Attendance Buttons
+        function disableAttendanceButtons() {
+            document.getElementById('markInBtn').disabled = true;
+            document.getElementById('markOutBtn').disabled = true;
+        }
+
+        // Mark Attendance
+        async function markAttendance(type) {
+            if (!userProfile || !currentLocation || !selfieBase64) {
+                showAlert('Please complete all steps before marking attendance', 'warning');
+                return;
+            }
+
+            const button = type === 'IN' ? document.getElementById('markInBtn') : document.getElementById('markOutBtn');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<div class="spinner"></div> Processing...';
+            button.disabled = true;
+
+            const timestamp = new Date().toISOString();
+            
+            const attendanceData = {
+                name: userProfile.name,
+                email: userProfile.email,
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                accuracy: currentLocation.accuracy,
+                timestamp: timestamp,
+                type: type,
+                selfie: selfieBase64
+            };
+
+            try {
+                // Send data to backend using fetch API
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(attendanceData)
+                });
+
+                // With no-cors mode, we assume success if no error thrown
+                showAlert(
+                    '✅ Attendance marked successfully!\n\n' +
+                    'Type: ' + type + '\n' +
+                    'Time: ' + new Date(timestamp).toLocaleString() + '\n' +
+                    'Location: (' + currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6) + ')',
+                    'success'
+                );
+                
+                // Reset selfie after 2 seconds
+                setTimeout(() => {
+                    retakeSelfie();
+                }, 2000);
+
+            } catch (error) {
+                showAlert('Error submitting attendance: ' + error.message, 'error');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Show Alert
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = 'alert alert-' + type;
+            alertBox.style.display = 'block';
+
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            initGoogleSignIn();
+        };
+
+        // Cleanup on page unload
+        window.onbeforeunload = function() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        };
+    </script>
+</body>
+</html>
