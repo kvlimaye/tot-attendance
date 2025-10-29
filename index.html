@@ -533,6 +533,29 @@
             }
         }
 
+        // Stop Camera
+function stopCamera() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+    const video = document.getElementById('cameraPreview');
+    video.srcObject = null;
+    video.style.display = 'none';
+    
+    // Clear selfie preview
+    document.getElementById('selfiePreview').style.display = 'none';
+    document.getElementById('selfiePreview').src = '';
+    selfieBase64 = null;
+    
+    // Reset buttons
+    document.getElementById('captureBtn').classList.remove('hidden');
+    document.getElementById('retakeBtn').classList.add('hidden');
+    
+    // Disable attendance buttons
+    disableAttendanceButtons();
+}
+
         // Capture Selfie
         function captureSelfie() {
             const video = document.getElementById('cameraPreview');
@@ -624,18 +647,23 @@
                 });
 
                 // With no-cors mode, we assume success if no error thrown
-                showAlert(
-                    '✅ Attendance marked successfully!\n\n' +
-                    'Type: ' + type + '\n' +
-                    'Time: ' + new Date(timestamp).toLocaleString() + '\n' +
-                    'Location: (' + currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6) + ')',
-                    'success'
-                );
-                
-                // Reset selfie after 2 seconds
-                setTimeout(() => {
-                    retakeSelfie();
-                }, 2000);
+showAlert(
+    '✅ Attendance marked successfully!\n\n' +
+    'Type: ' + type + '\n' +
+    'Time: ' + new Date(timestamp).toLocaleString() + '\n' +
+    'Location: (' + currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6) + ')',
+    'success'
+);
+
+// Stop camera and hide camera section
+stopCamera();
+document.getElementById('cameraSection').style.display = 'none';
+
+// Reset after 3 seconds to allow marking OUT later
+setTimeout(() => {
+    document.getElementById('cameraSection').style.display = 'block';
+    startCamera();
+}, 3000);
 
             } catch (error) {
                 showAlert('Error submitting attendance: ' + error.message, 'error');
