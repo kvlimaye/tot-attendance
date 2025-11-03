@@ -255,6 +255,134 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Success Modal - Full Screen */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(102, 126, 234, 0.95);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-modal.show {
+            display: flex;
+        }
+
+        .success-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease;
+        }
+
+        .success-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #155724;
+            margin-bottom: 15px;
+        }
+
+        .success-details {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .success-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 15px;
+        }
+
+        .success-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .success-detail-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .success-detail-value {
+            color: #212529;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .success-message {
+            color: #856404;
+            font-size: 14px;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .btn-close-app {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close-app:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         .footer {
             text-align: center;
             padding: 20px;
@@ -275,6 +403,18 @@
             .btn {
                 padding: 14px;
                 font-size: 15px;
+            }
+
+            .success-content {
+                padding: 30px 20px;
+            }
+
+            .success-icon {
+                font-size: 60px;
+            }
+
+            .success-title {
+                font-size: 24px;
             }
         }
     </style>
@@ -366,6 +506,41 @@
                 </button>
                 <button class="btn btn-danger" id="markOutBtn" onclick="markAttendance('OUT')" disabled>
                     🚪 Mark OUT
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="success-modal">
+            <div class="success-content">
+                <div class="success-icon">✅</div>
+                <div class="success-title">Attendance Recorded!</div>
+                
+                <div class="success-details">
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Type:</span>
+                        <span class="success-detail-value" id="successType">-</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Name:</span>
+                        <span class="success-detail-value" id="successName">-</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Time:</span>
+                        <span class="success-detail-value" id="successTime">-</span>
+                    </div>
+                    <div class="success-detail-row">
+                        <span class="success-detail-label">Location:</span>
+                        <span class="success-detail-value" id="successLocation">-</span>
+                    </div>
+                </div>
+
+                <div class="success-message">
+                    Thank you! Your attendance has been recorded successfully.
+                </div>
+
+                <button class="btn-close-app" onclick="closeApp()">
+                    OK - Close
                 </button>
             </div>
         </div>
@@ -534,27 +709,27 @@
         }
 
         // Stop Camera
-function stopCamera() {
-    if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-    }
-    const video = document.getElementById('cameraPreview');
-    video.srcObject = null;
-    video.style.display = 'none';
-    
-    // Clear selfie preview
-    document.getElementById('selfiePreview').style.display = 'none';
-    document.getElementById('selfiePreview').src = '';
-    selfieBase64 = null;
-    
-    // Reset buttons
-    document.getElementById('captureBtn').classList.remove('hidden');
-    document.getElementById('retakeBtn').classList.add('hidden');
-    
-    // Disable attendance buttons
-    disableAttendanceButtons();
-}
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            const video = document.getElementById('cameraPreview');
+            video.srcObject = null;
+            video.style.display = 'none';
+            
+            // Clear selfie preview
+            document.getElementById('selfiePreview').style.display = 'none';
+            document.getElementById('selfiePreview').src = '';
+            selfieBase64 = null;
+            
+            // Reset buttons
+            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+            
+            // Disable attendance buttons
+            disableAttendanceButtons();
+        }
 
         // Capture Selfie
         function captureSelfie() {
@@ -647,23 +822,23 @@ function stopCamera() {
                 });
 
                 // With no-cors mode, we assume success if no error thrown
-showAlert(
-    '✅ Attendance marked successfully!\n\n' +
-    'Type: ' + type + '\n' +
-    'Time: ' + new Date(timestamp).toLocaleString() + '\n' +
-    'Location: (' + currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6) + ')',
-    'success'
-);
+                // Stop camera immediately
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                    videoStream = null;
+                }
 
-// Stop camera and hide camera section
-stopCamera();
-document.getElementById('cameraSection').style.display = 'none';
+                // Hide all sections
+                document.getElementById('userInfoSection').style.display = 'none';
+                document.getElementById('gpsSection').style.display = 'none';
+                document.getElementById('cameraSection').style.display = 'none';
+                document.getElementById('attendanceSection').style.display = 'none';
+                document.getElementById('alertBox').style.display = 'none';
 
-// Reset after 3 seconds to allow marking OUT later
-setTimeout(() => {
-    document.getElementById('cameraSection').style.display = 'block';
-    startCamera();
-}, 3000);
+                // Show full-screen success modal
+                showSuccessModal(type, timestamp);
+
+                return; // Exit function
 
             } catch (error) {
                 showAlert('Error submitting attendance: ' + error.message, 'error');
@@ -683,6 +858,43 @@ setTimeout(() => {
             setTimeout(() => {
                 alertBox.style.display = 'none';
             }, 5000);
+        }
+
+        // Show Success Modal
+        function showSuccessModal(type, timestamp) {
+            // Fill in details
+            document.getElementById('successType').textContent = type;
+            document.getElementById('successName').textContent = userProfile.name;
+            document.getElementById('successTime').textContent = new Date(timestamp).toLocaleString('en-IN', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+            document.getElementById('successLocation').textContent = 
+                currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6);
+
+            // Show modal
+            document.getElementById('successModal').classList.add('show');
+        }
+
+        // Close App
+        function closeApp() {
+            // Try to close the window
+            window.close();
+            
+            // If window.close() doesn't work (opened directly, not via script)
+            setTimeout(() => {
+                // Show alternative message
+                document.querySelector('.success-content').innerHTML = `
+                    <div class="success-icon">👍</div>
+                    <div class="success-title">All Done!</div>
+                    <div class="success-message" style="font-size: 16px; margin: 30px 0;">
+                        You may now close this browser tab manually.
+                    </div>
+                    <div style="color: #6c757d; font-size: 14px;">
+                        (Press Alt+F4 or click the X button)
+                    </div>
+                `;
+            }, 500);
         }
 
         // Initialize on page load
