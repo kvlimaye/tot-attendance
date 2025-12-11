@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prosecutors Attendance System</title>
+    
+    <!-- UPDATE THIS: Replace with your OAuth Client ID from Google Cloud Console -->
     <meta name="google-signin-client_id" content="632342405819-d9qse2hi5q7m3qf6ag22at5qhsh87i7p.apps.googleusercontent.com">
+    
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Face Detection Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
     <style>
         * {
             margin: 0;
@@ -191,6 +191,15 @@
             background: #5a6268;
         }
 
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: #e0a800;
+        }
+
         #cameraPreview {
             width: 100%;
             max-height: 350px;
@@ -253,6 +262,14 @@
             font-weight: 600;
             color: #856404;
             animation: pulse 2s infinite;
+        }
+
+        .countdown {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1e3c72;
+            text-align: center;
+            margin: 10px 0;
         }
 
         @keyframes pulse {
@@ -423,7 +440,7 @@
             <h1>⚖️ Prosecutors Attendance System</h1>
             <div class="system-info">
                 <strong>Judiciary Department</strong><br>
-                📱 Biometric Verification with Eye Blink Detection<br>
+                📱 Photo Verification System<br>
                 📍 Location-Based Attendance Tracking
             </div>
         </div>
@@ -493,14 +510,16 @@
 
             <!-- Camera Section -->
             <div id="cameraSection" class="card hidden">
-                <div class="card-title">📷 Biometric Verification</div>
+                <div class="card-title">📷 Photo Verification</div>
+                <div id="countdownDisplay" class="countdown hidden">3</div>
                 <div id="blinkInstruction" class="blink-instruction hidden">
-                    👁️ Please BLINK your eyes when prompted
+                    📸 Photo will be captured in <span id="countdownText">3</span> seconds
                 </div>
                 <video id="cameraPreview" autoplay playsinline></video>
                 <img id="capturedImage" alt="Captured Photo">
-                <button class="btn btn-primary" id="startBlinkBtn" onclick="startBlinkDetection()">
-                    👁️ Start Eye Blink Verification
+                
+                <button class="btn btn-primary" id="captureBtn" onclick="startCountdown()">
+                    📸 Capture Photo (Auto)
                 </button>
                 <button class="btn btn-secondary hidden" id="retakeBtn" onclick="retakePhoto()">
                     🔄 Retake Photo
@@ -560,7 +579,7 @@
     </div>
 
     <script>
-        // Backend URL - Your Apps Script deployment
+        // UPDATE THIS: Replace with your Apps Script Web App URL
         const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz54FxyNz1_Fpp-RAofprJWwQ4C_Wai2_Zxn3uLilWvQntZ7BJWq7KNoQcYQI0voUvA/exec';
         
         // Global variables
@@ -569,19 +588,7 @@
         let currentLocation = null;
         let capturedImageBase64 = null;
         let videoStream = null;
-        let faceDetectionModel = null;
-        let blinkDetected = false;
-
-        // Load TensorFlow Face Detection Model
-        async function loadFaceDetectionModel() {
-            try {
-                faceDetectionModel = await blazeface.load();
-                console.log('Face detection model loaded successfully');
-            } catch (error) {
-                console.error('Error loading face detection model:', error);
-                showAlert('Face detection model failed to load. Please refresh the page.', 'error');
-            }
-        }
+        let countdownInterval = null;
 
         // Initialize Google Sign-In
         function initGoogleSignIn() {
@@ -740,82 +747,51 @@
         async function startCamera() {
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user' },
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
                     audio: false 
                 });
                 const video = document.getElementById('cameraPreview');
                 video.srcObject = videoStream;
                 video.style.display = 'block';
-                document.getElementById('startBlinkBtn').disabled = false;
+                document.getElementById('captureBtn').disabled = false;
+                showAlert('✅ Camera ready! Click "Capture Photo" when ready.', 'success');
             } catch (error) {
                 showAlert('Unable to access camera: ' + error.message, 'error');
-                document.getElementById('startBlinkBtn').disabled = true;
+                document.getElementById('captureBtn').disabled = true;
             }
         }
 
-        // Start Blink Detection
-        async function startBlinkDetection() {
-            if (!faceDetectionModel) {
-                showAlert('Loading face detection model...', 'info');
-                await loadFaceDetectionModel();
-            }
-
-            showAlert('👁️ Please look at the camera and blink your eyes...', 'info');
+        // Start Countdown (Simple 3-2-1 countdown)
+        function startCountdown() {
+            showAlert('Get ready! Photo will be taken in 3 seconds...', 'info');
+            document.getElementById('captureBtn').disabled = true;
             document.getElementById('blinkInstruction').classList.remove('hidden');
-            document.getElementById('startBlinkBtn').disabled = true;
+            document.getElementById('countdownDisplay').classList.remove('hidden');
+            
+            let count = 3;
+            document.getElementById('countdownDisplay').textContent = count;
+            document.getElementById('countdownText').textContent = count;
 
-            const video = document.getElementById('cameraPreview');
-            let blinkCount = 0;
-            let lastEyeState = 'open';
-            let detectionAttempts = 0;
-            const maxAttempts = 50; // 10 seconds at ~5 fps
-
-            const detectBlinks = async () => {
-                if (detectionAttempts >= maxAttempts) {
-                    showAlert('❌ Blink detection timeout. Please try again.', 'error');
+            countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    document.getElementById('countdownDisplay').textContent = count;
+                    document.getElementById('countdownText').textContent = count;
+                } else {
+                    clearInterval(countdownInterval);
+                    document.getElementById('countdownDisplay').classList.add('hidden');
                     document.getElementById('blinkInstruction').classList.add('hidden');
-                    document.getElementById('startBlinkBtn').disabled = false;
-                    return;
+                    capturePhoto();
                 }
-
-                try {
-                    const predictions = await faceDetectionModel.estimateFaces(video, false);
-                    
-                    if (predictions.length > 0) {
-                        // Simple blink detection based on face confidence
-                        // In production, use more sophisticated eye detection
-                        const face = predictions[0];
-                        const eyesClosed = face.probability[0] < 0.95; // Threshold for closed eyes
-
-                        if (eyesClosed && lastEyeState === 'open') {
-                            blinkCount++;
-                            lastEyeState = 'closed';
-                            showAlert(`Blink detected! (${blinkCount}/2)`, 'success');
-                        } else if (!eyesClosed) {
-                            lastEyeState = 'open';
-                        }
-
-                        if (blinkCount >= 2) {
-                            blinkDetected = true;
-                            captureFinalImage();
-                            return;
-                        }
-                    }
-
-                    detectionAttempts++;
-                    setTimeout(detectBlinks, 200); // Check every 200ms
-                } catch (error) {
-                    console.error('Detection error:', error);
-                    detectionAttempts++;
-                    setTimeout(detectBlinks, 200);
-                }
-            };
-
-            detectBlinks();
+            }, 1000);
         }
 
-        // Capture Final Image after blink detection
-        function captureFinalImage() {
+        // Capture Photo
+        function capturePhoto() {
             const video = document.getElementById('cameraPreview');
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
@@ -828,24 +804,29 @@
             document.getElementById('capturedImage').src = capturedImageBase64;
             document.getElementById('capturedImage').style.display = 'block';
             document.getElementById('cameraPreview').style.display = 'none';
-            document.getElementById('startBlinkBtn').classList.add('hidden');
+            document.getElementById('captureBtn').classList.add('hidden');
             document.getElementById('retakeBtn').classList.remove('hidden');
-            document.getElementById('blinkInstruction').classList.add('hidden');
             
-            showAlert('✅ Photo captured with blink verification!', 'success');
+            showAlert('✅ Photo captured successfully!', 'success');
             checkAllConditions();
         }
 
         // Retake Photo
         function retakePhoto() {
-            blinkDetected = false;
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
             capturedImageBase64 = null;
             document.getElementById('capturedImage').style.display = 'none';
             document.getElementById('cameraPreview').style.display = 'block';
-            document.getElementById('startBlinkBtn').classList.remove('hidden');
+            document.getElementById('captureBtn').classList.remove('hidden');
             document.getElementById('retakeBtn').classList.add('hidden');
-            document.getElementById('startBlinkBtn').disabled = false;
+            document.getElementById('captureBtn').disabled = false;
+            document.getElementById('countdownDisplay').classList.add('hidden');
+            document.getElementById('blinkInstruction').classList.add('hidden');
             disableAttendanceButtons();
+            showAlert('Ready to take another photo', 'info');
         }
 
         // Check all conditions
@@ -860,9 +841,10 @@
                     courtLng
                 ) * 1000;
                 
-                if (distance <= 50 && blinkDetected) {
+                if (distance <= 50) {
                     document.getElementById('markInBtn').disabled = false;
                     document.getElementById('markOutBtn').disabled = false;
+                    showAlert('✅ All checks passed! You can now mark attendance.', 'success');
                 }
             }
         }
@@ -977,13 +959,15 @@
         // Initialize on page load
         window.onload = function() {
             initGoogleSignIn();
-            loadFaceDetectionModel();
         };
 
         // Cleanup
         window.onbeforeunload = function() {
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
             }
         };
     </script>
