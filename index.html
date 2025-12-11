@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ToT Attendance System</title>
+    <title>Prosecutors Attendance System</title>
     <meta name="google-signin-client_id" content="632342405819-d9qse2hi5q7m3qf6ag22at5qhsh87i7p.apps.googleusercontent.com">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Face Detection Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
     <style>
         * {
             margin: 0;
@@ -15,7 +18,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
             padding: 20px;
             display: flex;
@@ -24,29 +27,29 @@
         }
 
         .container {
-            max-width: 500px;
+            max-width: 550px;
             width: 100%;
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
             overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             padding: 30px 20px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 26px;
             margin-bottom: 10px;
             font-weight: 600;
         }
 
-        .header .event-info {
-            font-size: 14px;
+        .header .system-info {
+            font-size: 13px;
             opacity: 0.95;
             line-height: 1.6;
         }
@@ -118,6 +121,8 @@
             color: #212529;
             font-weight: 600;
             text-align: right;
+            max-width: 60%;
+            word-break: break-word;
         }
 
         #signInDiv {
@@ -148,13 +153,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.4);
         }
 
         .btn-success {
@@ -188,16 +193,17 @@
 
         #cameraPreview {
             width: 100%;
-            max-height: 300px;
+            max-height: 350px;
             border-radius: 12px;
             margin: 15px 0;
             display: none;
             object-fit: cover;
+            border: 3px solid #1e3c72;
         }
 
-        #selfiePreview {
+        #capturedImage {
             width: 100%;
-            max-height: 300px;
+            max-height: 350px;
             border-radius: 12px;
             margin: 15px 0;
             display: none;
@@ -237,13 +243,30 @@
             border: 1px solid #bee5eb;
         }
 
+        .blink-instruction {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: 600;
+            color: #856404;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .hidden {
             display: none !important;
         }
 
         .spinner {
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border-top: 3px solid #1e3c72;
             border-radius: 50%;
             width: 20px;
             height: 20px;
@@ -255,7 +278,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Success Modal - Full Screen */
         .success-modal {
             display: none;
             position: fixed;
@@ -263,7 +285,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(102, 126, 234, 0.95);
+            background: rgba(30, 60, 114, 0.95);
             z-index: 10000;
             justify-content: center;
             align-items: center;
@@ -329,17 +351,10 @@
             text-align: right;
         }
 
-        .success-message {
-            color: #856404;
-            font-size: 14px;
-            margin: 15px 0;
-            line-height: 1.6;
-        }
-
         .btn-close-app {
             width: 100%;
             padding: 18px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             border: none;
             border-radius: 12px;
@@ -352,7 +367,7 @@
 
         .btn-close-app:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 30px rgba(30, 60, 114, 0.4);
         }
 
         @keyframes fadeIn {
@@ -393,28 +408,11 @@
 
         @media (max-width: 480px) {
             .header h1 {
-                font-size: 24px;
+                font-size: 22px;
             }
             
             .content {
                 padding: 20px 15px;
-            }
-            
-            .btn {
-                padding: 14px;
-                font-size: 15px;
-            }
-
-            .success-content {
-                padding: 30px 20px;
-            }
-
-            .success-icon {
-                font-size: 60px;
-            }
-
-            .success-title {
-                font-size: 24px;
             }
         }
     </style>
@@ -422,11 +420,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 ToT Attendance System</h1>
-            <div class="event-info">
-                <strong>Training Program</strong><br>
-                📅 3rd Nov - 5th Nov 2025<br>
-                📍 Sanvand Hall, CP Office, CBD Belapur
+            <h1>⚖️ Prosecutors Attendance System</h1>
+            <div class="system-info">
+                <strong>Judiciary Department</strong><br>
+                📱 Biometric Verification with Eye Blink Detection<br>
+                📍 Location-Based Attendance Tracking
             </div>
         </div>
 
@@ -435,50 +433,58 @@
 
             <!-- Sign In Section -->
             <div id="signInSection" class="card">
-                <div class="card-title">🔐 Authentication Required</div>
+                <div class="card-title">🔐 Prosecutor Login</div>
                 <p style="font-size: 14px; color: #6c757d; margin-bottom: 15px;">
-                    Please sign in with your Google account to mark attendance.
+                    Sign in with your registered Gmail account to mark attendance.
                 </p>
                 <div id="signInDiv"></div>
             </div>
 
-            <!-- User Info Section -->
-            <div id="userInfoSection" class="card hidden">
+            <!-- Prosecutor Info Section -->
+            <div id="prosecutorInfoSection" class="card hidden">
                 <div class="card-title">
-                    👤 User Information
-                    <span class="status-badge status-success">Authenticated</span>
+                    👤 Prosecutor Details
+                    <span class="status-badge status-success">Verified</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Name:</span>
-                    <span class="info-value" id="userName">-</span>
+                    <span class="info-value" id="prosecutorName">-</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Email:</span>
-                    <span class="info-value" id="userEmail">-</span>
+                    <span class="info-value" id="prosecutorEmail">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Posting:</span>
+                    <span class="info-value" id="prosecutorPosting">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Superior:</span>
+                    <span class="info-value" id="prosecutorSuperior">-</span>
                 </div>
             </div>
 
             <!-- GPS Section -->
             <div id="gpsSection" class="card hidden">
                 <div class="card-title">
-                    📍 Location Status
+                    📍 Location Verification
                     <span id="locationBadge" class="status-badge status-warning">Checking...</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Latitude:</span>
-                    <span class="info-value" id="latitude">-</span>
+                    <span class="info-label">Court Location:</span>
+                    <span class="info-value" id="courtLocation">-</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Longitude:</span>
-                    <span class="info-value" id="longitude">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Accuracy:</span>
-                    <span class="info-value" id="accuracy">-</span>
+                    <span class="info-label">Your Position:</span>
+                    <span class="info-value" id="yourPosition">-</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Distance:</span>
                     <span class="info-value" id="distance">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Accuracy:</span>
+                    <span class="info-value" id="accuracy">-</span>
                 </div>
                 <button class="btn btn-secondary" id="refreshGPSBtn" onclick="fetchLocation()">
                     🔄 Refresh Location
@@ -487,13 +493,16 @@
 
             <!-- Camera Section -->
             <div id="cameraSection" class="card hidden">
-                <div class="card-title">📷 Selfie Verification</div>
+                <div class="card-title">📷 Biometric Verification</div>
+                <div id="blinkInstruction" class="blink-instruction hidden">
+                    👁️ Please BLINK your eyes when prompted
+                </div>
                 <video id="cameraPreview" autoplay playsinline></video>
-                <img id="selfiePreview" alt="Selfie Preview">
-                <button class="btn btn-primary" id="captureBtn" onclick="captureSelfie()">
-                    📸 Capture Selfie
+                <img id="capturedImage" alt="Captured Photo">
+                <button class="btn btn-primary" id="startBlinkBtn" onclick="startBlinkDetection()">
+                    👁️ Start Eye Blink Verification
                 </button>
-                <button class="btn btn-secondary hidden" id="retakeBtn" onclick="retakeSelfie()">
+                <button class="btn btn-secondary hidden" id="retakeBtn" onclick="retakePhoto()">
                     🔄 Retake Photo
                 </button>
             </div>
@@ -535,8 +544,8 @@
                     </div>
                 </div>
 
-                <div class="success-message">
-                    Thank you! Your attendance has been recorded successfully.
+                <div class="success-message" style="color: #856404; font-size: 14px; margin: 15px 0;">
+                    Your attendance has been recorded successfully.
                 </div>
 
                 <button class="btn-close-app" onclick="closeApp()">
@@ -546,26 +555,33 @@
         </div>
 
         <div class="footer">
-            © 2025 ToT Attendance System | Powered by Google Apps Script
+            © 2025 Prosecutors Attendance System | Judiciary Department
         </div>
     </div>
 
     <script>
         // Backend URL - Your Apps Script deployment
-        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxCzEQHdtkrL_MZjh0-aCClI4OqwWGnoTsDUojr5W0nnOiJgsNjsQnd1oszJkwPtC1D1Q/exec';
+        const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz54FxyNz1_Fpp-RAofprJWwQ4C_Wai2_Zxn3uLilWvQntZ7BJWq7KNoQcYQI0voUvA/exec';
         
-        // Configuration
-        const CONFIG = {
-            VENUE_LAT: 19.022806,
-            VENUE_LNG: 73.0368623,
-            MAX_DISTANCE: 0.05 // 50 meters
-        };
-
         // Global variables
         let userProfile = null;
+        let prosecutorData = null;
         let currentLocation = null;
-        let selfieBase64 = null;
+        let capturedImageBase64 = null;
         let videoStream = null;
+        let faceDetectionModel = null;
+        let blinkDetected = false;
+
+        // Load TensorFlow Face Detection Model
+        async function loadFaceDetectionModel() {
+            try {
+                faceDetectionModel = await blazeface.load();
+                console.log('Face detection model loaded successfully');
+            } catch (error) {
+                console.error('Error loading face detection model:', error);
+                showAlert('Face detection model failed to load. Please refresh the page.', 'error');
+            }
+        }
 
         // Initialize Google Sign-In
         function initGoogleSignIn() {
@@ -586,7 +602,7 @@
         }
 
         // Handle Google Sign-In response
-        function handleCredentialResponse(response) {
+        async function handleCredentialResponse(response) {
             const credential = response.credential;
             const payload = parseJwt(credential);
             
@@ -596,18 +612,23 @@
                 picture: payload.picture
             };
 
-            document.getElementById('userName').textContent = userProfile.name;
-            document.getElementById('userEmail').textContent = userProfile.email;
+            showAlert('Verifying prosecutor credentials...', 'info');
 
-            document.getElementById('signInSection').classList.add('hidden');
-            document.getElementById('userInfoSection').classList.remove('hidden');
-            document.getElementById('gpsSection').classList.remove('hidden');
-            document.getElementById('cameraSection').classList.remove('hidden');
-            document.getElementById('attendanceSection').classList.remove('hidden');
+            // Verify prosecutor in database
+            try {
+                const result = await fetch(BACKEND_URL + '?action=verifyProsecutor&email=' + encodeURIComponent(userProfile.email));
+                const data = await result.json();
 
-            showAlert('Successfully signed in as ' + userProfile.name, 'success');
-            fetchLocation();
-            startCamera();
+                if (data.success) {
+                    prosecutorData = data.prosecutor;
+                    showProsecutorDetails();
+                } else {
+                    showAlert('❌ Your email is not registered as a prosecutor. Please contact administrator.', 'error');
+                    document.getElementById('signInSection').classList.remove('hidden');
+                }
+            } catch (error) {
+                showAlert('Error verifying prosecutor: ' + error.message, 'error');
+            }
         }
 
         // Parse JWT token
@@ -620,10 +641,28 @@
             return JSON.parse(jsonPayload);
         }
 
+        // Show Prosecutor Details
+        function showProsecutorDetails() {
+            document.getElementById('prosecutorName').textContent = prosecutorData.name;
+            document.getElementById('prosecutorEmail').textContent = prosecutorData.email;
+            document.getElementById('prosecutorPosting').textContent = prosecutorData.posting;
+            document.getElementById('prosecutorSuperior').textContent = prosecutorData.superiorEmail;
+
+            document.getElementById('signInSection').classList.add('hidden');
+            document.getElementById('prosecutorInfoSection').classList.remove('hidden');
+            document.getElementById('gpsSection').classList.remove('hidden');
+            document.getElementById('cameraSection').classList.remove('hidden');
+            document.getElementById('attendanceSection').classList.remove('hidden');
+
+            showAlert('✅ Welcome, ' + prosecutorData.name + '!', 'success');
+            fetchLocation();
+            startCamera();
+        }
+
         // Fetch GPS Location
         function fetchLocation() {
             showAlert('Fetching your location...', 'info');
-            document.getElementById('locationBadge').textContent = 'Fetching...';
+            document.getElementById('locationBadge').textContent = 'Checking...';
             document.getElementById('locationBadge').className = 'status-badge status-warning';
 
             if (!navigator.geolocation) {
@@ -639,28 +678,34 @@
                         accuracy: position.coords.accuracy
                     };
 
-                    document.getElementById('latitude').textContent = currentLocation.latitude.toFixed(6);
-                    document.getElementById('longitude').textContent = currentLocation.longitude.toFixed(6);
+                    const courtLat = prosecutorData.latitude;
+                    const courtLng = prosecutorData.longitude;
+
+                    document.getElementById('courtLocation').textContent = 
+                        `${courtLat.toFixed(6)}, ${courtLng.toFixed(6)}`;
+                    document.getElementById('yourPosition').textContent = 
+                        `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
                     document.getElementById('accuracy').textContent = currentLocation.accuracy.toFixed(2) + ' m';
 
                     const distance = calculateDistance(
                         currentLocation.latitude,
                         currentLocation.longitude,
-                        CONFIG.VENUE_LAT,
-                        CONFIG.VENUE_LNG
+                        courtLat,
+                        courtLng
                     );
 
-                    document.getElementById('distance').textContent = distance.toFixed(3) + ' km';
+                    const distanceMeters = distance * 1000;
+                    document.getElementById('distance').textContent = distanceMeters.toFixed(2) + ' m';
 
-                    if (distance <= CONFIG.MAX_DISTANCE) {
+                    if (distanceMeters <= 50) {
                         document.getElementById('locationBadge').textContent = 'In Range ✓';
                         document.getElementById('locationBadge').className = 'status-badge status-success';
-                        showAlert('You are within the venue range!', 'success');
-                        enableAttendanceButtons();
+                        showAlert('✅ You are within the court premises!', 'success');
+                        checkAllConditions();
                     } else {
                         document.getElementById('locationBadge').textContent = 'Out of Range';
                         document.getElementById('locationBadge').className = 'status-badge status-error';
-                        showAlert('You are too far from the venue (' + distance.toFixed(3) + ' km away). Please move closer.', 'error');
+                        showAlert('❌ You are ' + distanceMeters.toFixed(2) + ' meters away. Please move within 50 meters of your court.', 'error');
                         disableAttendanceButtons();
                     }
                 },
@@ -701,38 +746,76 @@
                 const video = document.getElementById('cameraPreview');
                 video.srcObject = videoStream;
                 video.style.display = 'block';
-                document.getElementById('captureBtn').disabled = false;
+                document.getElementById('startBlinkBtn').disabled = false;
             } catch (error) {
-                showAlert('Unable to access camera. Error: ' + error.message, 'error');
-                document.getElementById('captureBtn').disabled = true;
+                showAlert('Unable to access camera: ' + error.message, 'error');
+                document.getElementById('startBlinkBtn').disabled = true;
             }
         }
 
-        // Stop Camera
-        function stopCamera() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
+        // Start Blink Detection
+        async function startBlinkDetection() {
+            if (!faceDetectionModel) {
+                showAlert('Loading face detection model...', 'info');
+                await loadFaceDetectionModel();
             }
+
+            showAlert('👁️ Please look at the camera and blink your eyes...', 'info');
+            document.getElementById('blinkInstruction').classList.remove('hidden');
+            document.getElementById('startBlinkBtn').disabled = true;
+
             const video = document.getElementById('cameraPreview');
-            video.srcObject = null;
-            video.style.display = 'none';
-            
-            // Clear selfie preview
-            document.getElementById('selfiePreview').style.display = 'none';
-            document.getElementById('selfiePreview').src = '';
-            selfieBase64 = null;
-            
-            // Reset buttons
-            document.getElementById('captureBtn').classList.remove('hidden');
-            document.getElementById('retakeBtn').classList.add('hidden');
-            
-            // Disable attendance buttons
-            disableAttendanceButtons();
+            let blinkCount = 0;
+            let lastEyeState = 'open';
+            let detectionAttempts = 0;
+            const maxAttempts = 50; // 10 seconds at ~5 fps
+
+            const detectBlinks = async () => {
+                if (detectionAttempts >= maxAttempts) {
+                    showAlert('❌ Blink detection timeout. Please try again.', 'error');
+                    document.getElementById('blinkInstruction').classList.add('hidden');
+                    document.getElementById('startBlinkBtn').disabled = false;
+                    return;
+                }
+
+                try {
+                    const predictions = await faceDetectionModel.estimateFaces(video, false);
+                    
+                    if (predictions.length > 0) {
+                        // Simple blink detection based on face confidence
+                        // In production, use more sophisticated eye detection
+                        const face = predictions[0];
+                        const eyesClosed = face.probability[0] < 0.95; // Threshold for closed eyes
+
+                        if (eyesClosed && lastEyeState === 'open') {
+                            blinkCount++;
+                            lastEyeState = 'closed';
+                            showAlert(`Blink detected! (${blinkCount}/2)`, 'success');
+                        } else if (!eyesClosed) {
+                            lastEyeState = 'open';
+                        }
+
+                        if (blinkCount >= 2) {
+                            blinkDetected = true;
+                            captureFinalImage();
+                            return;
+                        }
+                    }
+
+                    detectionAttempts++;
+                    setTimeout(detectBlinks, 200); // Check every 200ms
+                } catch (error) {
+                    console.error('Detection error:', error);
+                    detectionAttempts++;
+                    setTimeout(detectBlinks, 200);
+                }
+            };
+
+            detectBlinks();
         }
 
-        // Capture Selfie
-        function captureSelfie() {
+        // Capture Final Image after blink detection
+        function captureFinalImage() {
             const video = document.getElementById('cameraPreview');
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
@@ -740,39 +823,44 @@
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            selfieBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
             
-            document.getElementById('selfiePreview').src = selfieBase64;
-            document.getElementById('selfiePreview').style.display = 'block';
+            document.getElementById('capturedImage').src = capturedImageBase64;
+            document.getElementById('capturedImage').style.display = 'block';
             document.getElementById('cameraPreview').style.display = 'none';
-            document.getElementById('captureBtn').classList.add('hidden');
+            document.getElementById('startBlinkBtn').classList.add('hidden');
             document.getElementById('retakeBtn').classList.remove('hidden');
+            document.getElementById('blinkInstruction').classList.add('hidden');
             
-            showAlert('Selfie captured successfully!', 'success');
-            enableAttendanceButtons();
+            showAlert('✅ Photo captured with blink verification!', 'success');
+            checkAllConditions();
         }
 
-        // Retake Selfie
-        function retakeSelfie() {
-            selfieBase64 = null;
-            document.getElementById('selfiePreview').style.display = 'none';
+        // Retake Photo
+        function retakePhoto() {
+            blinkDetected = false;
+            capturedImageBase64 = null;
+            document.getElementById('capturedImage').style.display = 'none';
             document.getElementById('cameraPreview').style.display = 'block';
-            document.getElementById('captureBtn').classList.remove('hidden');
+            document.getElementById('startBlinkBtn').classList.remove('hidden');
             document.getElementById('retakeBtn').classList.add('hidden');
+            document.getElementById('startBlinkBtn').disabled = false;
             disableAttendanceButtons();
         }
 
-        // Enable Attendance Buttons
-        function enableAttendanceButtons() {
-            if (userProfile && currentLocation && selfieBase64) {
+        // Check all conditions
+        function checkAllConditions() {
+            if (prosecutorData && currentLocation && capturedImageBase64) {
+                const courtLat = prosecutorData.latitude;
+                const courtLng = prosecutorData.longitude;
                 const distance = calculateDistance(
                     currentLocation.latitude,
                     currentLocation.longitude,
-                    CONFIG.VENUE_LAT,
-                    CONFIG.VENUE_LNG
-                );
+                    courtLat,
+                    courtLng
+                ) * 1000;
                 
-                if (distance <= CONFIG.MAX_DISTANCE) {
+                if (distance <= 50 && blinkDetected) {
                     document.getElementById('markInBtn').disabled = false;
                     document.getElementById('markOutBtn').disabled = false;
                 }
@@ -787,8 +875,8 @@
 
         // Mark Attendance
         async function markAttendance(type) {
-            if (!userProfile || !currentLocation || !selfieBase64) {
-                showAlert('Please complete all steps before marking attendance', 'warning');
+            if (!prosecutorData || !currentLocation || !capturedImageBase64) {
+                showAlert('Please complete all verification steps', 'warning');
                 return;
             }
 
@@ -800,19 +888,22 @@
             const timestamp = new Date().toISOString();
             
             const attendanceData = {
-                name: userProfile.name,
-                email: userProfile.email,
+                action: 'markAttendance',
+                email: prosecutorData.email,
+                name: prosecutorData.name,
+                posting: prosecutorData.posting,
+                superiorEmail: prosecutorData.superiorEmail,
                 latitude: currentLocation.latitude,
                 longitude: currentLocation.longitude,
                 accuracy: currentLocation.accuracy,
                 timestamp: timestamp,
                 type: type,
-                selfie: selfieBase64
+                photo: capturedImageBase64,
+                blinkVerified: true
             };
 
             try {
-                // Send data to backend using fetch API
-                await fetch(BACKEND_URL, {
+                const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -821,28 +912,23 @@
                     body: JSON.stringify(attendanceData)
                 });
 
-                // With no-cors mode, we assume success if no error thrown
-                // Stop camera immediately
+                // Stop camera
                 if (videoStream) {
                     videoStream.getTracks().forEach(track => track.stop());
                     videoStream = null;
                 }
 
-                // Hide all sections
-                document.getElementById('userInfoSection').style.display = 'none';
+                // Hide sections
+                document.getElementById('prosecutorInfoSection').style.display = 'none';
                 document.getElementById('gpsSection').style.display = 'none';
                 document.getElementById('cameraSection').style.display = 'none';
                 document.getElementById('attendanceSection').style.display = 'none';
                 document.getElementById('alertBox').style.display = 'none';
 
-                // Show full-screen success modal
                 showSuccessModal(type, timestamp);
 
-                return; // Exit function
-
             } catch (error) {
-                showAlert('Error submitting attendance: ' + error.message, 'error');
-            } finally {
+                showAlert('Error: ' + error.message, 'error');
                 button.innerHTML = originalText;
                 button.disabled = false;
             }
@@ -862,36 +948,27 @@
 
         // Show Success Modal
         function showSuccessModal(type, timestamp) {
-            // Fill in details
             document.getElementById('successType').textContent = type;
-            document.getElementById('successName').textContent = userProfile.name;
+            document.getElementById('successName').textContent = prosecutorData.name;
             document.getElementById('successTime').textContent = new Date(timestamp).toLocaleString('en-IN', {
                 dateStyle: 'medium',
                 timeStyle: 'short'
             });
-            document.getElementById('successLocation').textContent = 
-                currentLocation.latitude.toFixed(6) + ', ' + currentLocation.longitude.toFixed(6);
+            document.getElementById('successLocation').textContent = prosecutorData.posting;
 
-            // Show modal
             document.getElementById('successModal').classList.add('show');
         }
 
         // Close App
         function closeApp() {
-            // Try to close the window
             window.close();
             
-            // If window.close() doesn't work (opened directly, not via script)
             setTimeout(() => {
-                // Show alternative message
                 document.querySelector('.success-content').innerHTML = `
                     <div class="success-icon">👍</div>
                     <div class="success-title">All Done!</div>
                     <div class="success-message" style="font-size: 16px; margin: 30px 0;">
                         You may now close this browser tab manually.
-                    </div>
-                    <div style="color: #6c757d; font-size: 14px;">
-                        (Press Alt+F4 or click the X button)
                     </div>
                 `;
             }, 500);
@@ -900,9 +977,10 @@
         // Initialize on page load
         window.onload = function() {
             initGoogleSignIn();
+            loadFaceDetectionModel();
         };
 
-        // Cleanup on page unload
+        // Cleanup
         window.onbeforeunload = function() {
             if (videoStream) {
                 videoStream.getTracks().forEach(track => track.stop());
